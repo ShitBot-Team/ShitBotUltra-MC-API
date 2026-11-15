@@ -67,9 +67,11 @@ public final class ManagedBridgeClient implements BridgeClient {
         final CompletableFuture<JsonData> future;
         final String id, type;
         final int bytes;
+        final long expires;
         ScheduledFuture<?> timer;
-        Call(CompletableFuture<JsonData> future, String id, String type, int bytes) {
+        Call(CompletableFuture<JsonData> future, String id, String type, int bytes, long expires) {
             this.future = future; this.id = id; this.type = type; this.bytes = bytes;
+            this.expires = expires;
         }
     }
     private static final class Event {
@@ -81,6 +83,7 @@ public final class ManagedBridgeClient implements BridgeClient {
         long sequence;
         ScheduledFuture<?> timer;
         boolean finished;
+        final long expires = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
         Event(CompletableFuture<EventReceipt> future, String type, JsonElement payload, int bytes, boolean recovery) {
             this.future = future; this.type = type; this.payload = payload; this.bytes = bytes; this.recovery = recovery;
         }
@@ -256,6 +259,7 @@ public final class ManagedBridgeClient implements BridgeClient {
         Wire.instant(value, "server_time");
         String sessionId = Protocol.id(Wire.string(value, "session_id"), "session ID");
         sequence = Math.max(sequence, Wire.integer(value, "resume_sequence", 0, Protocol.MAX_SEQUENCE));
+        if (sequence >= Protocol.MAX_SEQUENCE) { disconnect(a, "SESSION_EXPIRED", true); return; }
         lastAck = 0; highestEventSequence = 0;
         if (a.timer != null) a.timer.cancel(false);
         if (!Wire.bool(value, "snapshot_required")) { becameReady(sessionId); return; }
@@ -300,6 +304,9 @@ public final class ManagedBridgeClient implements BridgeClient {
         if (ack < lastAck || ack > highestEventSequence || !sent.containsKey(ack)) throw Wire.invalid();
         lastAck = ack;
         List<Event> done = new ArrayList<Event>(sent.headMap(ack, true).values());
+        for (Event event : done) {
+            if (!event.recovery && System.nanoTime() - event.expires >= 0) { disconnect(a, "ACK_TIMEOUT", false); return; }
+        }
         sent.headMap(ack, true).clear();
         for (Event event : done) {
             if (event.recovery) {
@@ -341,7 +348,7 @@ public final class ManagedBridgeClient implements BridgeClient {
             if (calls.size() >= MAX_PENDING || callBytes + bytes > MAX_BUFFER_BYTES) { settle(future, null, error("BUSY")); return; }
             Attempt a = current;
             String id = UUID.randomUUID().toString();
-            Call call = new Call(future, id, type, bytes);
+            Call call = new Call(future, id, type, bytes, expires);
             calls.put(id, call); callBytes += bytes;
             JsonObject frame = nextFrame("request", type, id, body);
             frame.addProperty("timeout_ms", remaining); frame.addProperty("deadline", Instant.now().plusMillis(remaining).toString());
@@ -354,6 +361,7 @@ public final class ManagedBridgeClient implements BridgeClient {
         String id = Protocol.id(Wire.string(frame, "request_id"), "request ID");
         Call call = calls.get(id);
         if (call == null) return;
+        if (System.nanoTime() - call.expires >= 0) { finishCall(id, null, error("RESULT_UNKNOWN")); return; }
         if (!Wire.string(frame, "type").equals(call.type)) { finishCall(id, null, error("RESULT_UNKNOWN")); return; }
         if (frame.has("error")) {
             JsonObject remote = Wire.object(frame.get("error"));

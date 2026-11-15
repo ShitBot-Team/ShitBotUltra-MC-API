@@ -76,7 +76,7 @@ final class ActionDispatcher {
         }
         ActionHandler handler = options.actions.get(type);
         if (handler == null) { host.reply(epoch, type, requestId, null, "UNSUPPORTED_CAPABILITY"); return; }
-        if (running >= 64 || cache.size() >= 512 || cachedBytes >= MAX_CACHE_BYTES || pendingBytes + inputBytes > MAX_CACHE_BYTES) { host.reply(epoch, type, requestId, null, "BUSY"); return; }
+        if (running >= 64 || cache.size() >= 4096 || pendingBytes + inputBytes > MAX_CACHE_BYTES) { host.reply(epoch, type, requestId, null, "BUSY"); return; }
         long budget;
         try { budget = Math.min(timeout, Duration.between(Instant.now(), deadline.plusSeconds(30)).toMillis()); }
         catch (ArithmeticException | java.time.DateTimeException e) { host.reply(epoch, type, requestId, null, "INVALID_INPUT"); return; }
@@ -95,7 +95,7 @@ final class ActionDispatcher {
                     if (result == null) { host.post(() -> finish(entry, null, "RESULT_UNKNOWN")); return; }
                     result.whenComplete((value, error) -> host.post(() -> {
                         if (entry.done) return;
-                        if (error != null || value == null) { finish(entry, null, "RESULT_UNKNOWN"); return; }
+                        if (error != null || value == null) { finish(entry, null, failureCode(error)); return; }
                         try {
                             JsonElement parsed = Wire.parse(value.source(), Protocol.MAX_JSON_BYTES);
                             validateResult(type, data, value);
@@ -104,7 +104,7 @@ final class ActionDispatcher {
                     }));
                 } catch (Throwable failure) {
                     // A thrown callback may follow a side effect. Never convert it to a safe retry.
-                    host.post(() -> finish(entry, null, "RESULT_UNKNOWN"));
+                    host.post(() -> finish(entry, null, failureCode(failure)));
                 }
             };
             handlers.execute(entry.dispatch);
@@ -134,7 +134,12 @@ final class ActionDispatcher {
     private void finish(Entry entry, JsonElement result, String error) {
         if (entry.done) return;
         if (error == null && entry.isCancelled()) error = "RESULT_UNKNOWN";
+        if (error != null) result = null;
+        JsonElement firstResult = result;
+        String firstError = error;
         int bytes = result == null ? 0 : result.toString().getBytes(StandardCharsets.UTF_8).length;
+        // A full result-byte cache must not block unrelated actions. Preserve an
+        // unknown tombstone for duplicate keys while returning this first result.
         if (cachedBytes + bytes > MAX_CACHE_BYTES) { result = null; bytes = 0; error = "RESULT_UNKNOWN"; }
         entry.done = true; entry.cancelled.set(true); entry.retainedUntil = System.nanoTime() + RETENTION_NANOS;
         entry.result = result; entry.error = error; entry.bytes = bytes; cachedBytes += bytes; running--;
@@ -144,7 +149,7 @@ final class ActionDispatcher {
         if (entry.timer != null) entry.timer.cancel(false);
         // A duplicate request already received RESULT_UNKNOWN while running. Only
         // reply to the original here; cached duplicates can explicitly query later.
-        host.reply(entry.epoch, entry.type, entry.requestIds.iterator().next(), result, error);
+        host.reply(entry.epoch, entry.type, entry.requestIds.iterator().next(), firstResult, firstError);
     }
     void disconnected(long epoch) {
         for (Entry entry : cache.values()) if (entry.epoch == epoch && !entry.done) finish(entry, null, "RESULT_UNKNOWN");
@@ -165,6 +170,10 @@ final class ActionDispatcher {
     void close() {
         for (Entry entry : cache.values()) { entry.cancelled.set(true); if (entry.timer != null) entry.timer.cancel(false); }
         handlers.shutdownNow(); cache.clear(); requestKeys.clear();
+    }
+    private static String failureCode(Throwable error) {
+        for (int depth = 0; depth < 16 && (error instanceof CompletionException || error instanceof ExecutionException); depth++) error = error.getCause();
+        return error instanceof ActionRejectedException ? ((ActionRejectedException) error).code() : "RESULT_UNKNOWN";
     }
     private static String digest(String text) {
         try {
