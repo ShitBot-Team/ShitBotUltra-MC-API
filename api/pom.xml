@@ -4,5 +4,11 @@
   <parent><groupId>shitbotteam.ultra</groupId><artifactId>ultra-minecraft-parent</artifactId><version>0.1.0-SNAPSHOT</version></parent>
   <artifactId>ultra-minecraft-api</artifactId>
   <name>ShitBotUltra Minecraft Public API</name>
-  <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><configuration><archive><manifestEntries><Automatic-Module-Name>shitbotteam.ultra.minecraft.api</Automatic-Module-Name></manifestEntries></archive></configuration></plugin></plugins></build>
+  <build>
+    <resources>
+      <resource><directory>src/main/resources</directory></resource>
+      <resource><directory>${project.basedir}/..</directory><targetPath>META-INF</targetPath><filtering>false</filtering><includes><include>LICENSE</include><include>THIRD_PARTY_NOTICES.md</include><include>protocol/bridge-v1/**</include></includes></resource>
+    </resources>
+    <plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><configuration><archive><manifestEntries><Automatic-Module-Name>shitbotteam.ultra.minecraft.api</Automatic-Module-Name></manifestEntries></archive></configuration></plugin></plugins>
+  </build>
 </project>

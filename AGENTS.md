@@ -4,8 +4,8 @@
 
 ## 当前范围
 
-- 本阶段只写计划、代理规范与许可证，不写功能代码，不生成工程骨架、依赖或构建配置；README 后续再写。
-- 不运行测试、构建、应用或手动触发 CI，测试由维护者自行完成；可以检查文档差异、Git 状态和提交签名结果。
+- 本仓库已进入 Java API / 客户端源码实现阶段；当前范围以 README、协议来源记录及维护者本次具体指令为准，不自动实施其他组件或未开放的 Core 协议。
+- 不运行测试、构建、应用或手动触发 CI，测试由维护者自行完成；可以阅读源码、检查 Java 语法、契约、差异与 Git 状态。不得把静态检查称为编译、类型检查或功能验证。
 - 先确认当前仓库、分支和未提交修改，再从 [plan.md](plan.md) 按任务阅读；保留用户改动，不自行扩展工作范围。
 
 ## 本仓库边界
@@ -20,6 +20,6 @@
 
 同级克隆时读取 ../ShitBotUltra/AGENTS.md；没有 Core 克隆时读取上面的 GitHub 链接，按任务进入公共计划，不假设跨仓库规则自动加载。公共架构不在本仓库复制维护。
 
-使用系统 Git 和已配置身份，按职责分批签名 commit 后 push；当前文档任务已获推送授权。不加助手署名或 AI Co-authored-by，不关闭提交签名，不重写历史；推送后确认 GitHub Verified，不能只报本地验签。
+当前任务按模块交付 patch、应用基线和建议 Conventional Commit 信息，由维护者自行应用。不要沿用历史文档任务的 commit / push 授权。不加助手署名或 AI Co-authored-by，不关闭维护者提交签名，不重写历史；未来实际推送时再核对 GitHub Verified。
 
-提交格式见 [贡献指南](https://github.com/ShitBot-Team/ShitBotUltra/blob/main/CONTRIBUTING.md)，许可边界见 [许可说明](https://github.com/ShitBot-Team/ShitBotUltra/blob/main/docs/licensing.md)。本仓库提供完整 [AGPL-3.0-only LICENSE](LICENSE)。最终如实说明文档范围、提交与推送状态、Verified 结果及未运行测试 / 构建。
+提交格式见 [贡献指南](https://github.com/ShitBot-Team/ShitBotUltra/blob/main/CONTRIBUTING.md)，许可边界见 [许可说明](https://github.com/ShitBot-Team/ShitBotUltra/blob/main/docs/licensing.md)。本仓库提供完整 [AGPL-3.0-only LICENSE](LICENSE)。最终如实说明源码与文档范围、补丁交付、未运行测试 / 构建；没有实际提交或推送时不声称 Verified 结果。
