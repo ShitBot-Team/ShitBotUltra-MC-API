@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/ShitBot-Team/ShitBotUltra",
+  "path": "api/bridge/v1",
+  "protocol_version": 1,
+  "core_base_commit": "6b3e72cc348dfb605aacb28a203a4dbb8ed0025e",
+  "core_reviewed_tree": "98e69211b84c347336d5ee4408ed2e8d5677a88c",
+  "requires_core_patches": "0001 through 0007 from this session; tree is not a published commit",
+  "sha256": {
+    "envelope.schema.json": "f8d09d604b41b5be48654d50ac8c5aa79fe310de5f354cb490b91d6159eedcbe",
+    "types.go": "8a8e430c4ef63981ecd3d2c8fdca70bfcc2bfdc6027184f9aa6ca1a1d7a60822"
+  }
+}
