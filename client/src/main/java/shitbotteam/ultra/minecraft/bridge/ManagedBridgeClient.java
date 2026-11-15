@@ -332,6 +332,7 @@ public final class ManagedBridgeClient implements BridgeClient {
 
     @Override public CompletableFuture<JsonData> request(String type, JsonData payload, Duration timeout) {
         Protocol.id(type, "request type");
+        Protocol.text(type, "request type", 128);
         long millis = timeoutMillis(timeout);
         JsonElement body = Wire.object(payload);
         int bytes = payload.source().getBytes(StandardCharsets.UTF_8).length;
@@ -398,6 +399,10 @@ public final class ManagedBridgeClient implements BridgeClient {
         return future;
     }
     private void transmitEvent(Attempt a, Event e) {
+        if (!e.recovery && (System.nanoTime() - e.expires >= 0 || e.future.isCancelled())) {
+            finishEvent(e, 0, error(e.future.isCancelled() ? "CANCELED" : "DEADLINE_EXCEEDED"));
+            return;
+        }
         if (sequence >= Protocol.MAX_SEQUENCE) { finishEvent(e, 0, error("SESSION_EXPIRED")); fail("SESSION_EXPIRED"); return; }
         JsonObject frame = nextFrame("event", e.type, "", e.payload);
         e.sequence = sequence; highestEventSequence = sequence; sent.put(e.sequence, e);
