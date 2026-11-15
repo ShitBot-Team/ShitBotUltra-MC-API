@@ -55,7 +55,8 @@ public final class ClientOptions {
                 throw new IllegalArgumentException("Expected ws(s)://host[:port]/bridge/v1 without credentials, query or fragment");
             }
             String literal = host.startsWith("[") && host.endsWith("]") ? host.substring(1, host.length()-1) : host;
-            boolean loopback = literal.equals("localhost") || literal.equals("::1") || literal.equals("0:0:0:0:0:0:0:1") || literal.matches("127(?:\\.[0-9]{1,3}){3}");
+            boolean loopback = literal.equals("localhost") || literal.equals("::1") || literal.equals("0:0:0:0:0:0:0:1")
+                    || literal.matches("127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})){3}");
             if ("ws".equals(scheme) && !loopback) throw new IllegalArgumentException("Remote Core connections require wss");
             this.nodeId = Protocol.localId(nodeId, "node ID");
             this.networkId = Protocol.localId(networkId, "network ID");

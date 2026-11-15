@@ -24,7 +24,7 @@ public final class Protocol {
 
     public static String id(String value, String name) {
         text(value, name, 256);
-        if (value.isEmpty() || Character.isWhitespace(value.codePointAt(0)) || Character.isWhitespace(value.codePointBefore(value.length()))) throw new IllegalArgumentException(name + " is empty or padded");
+        if (value.isEmpty() || space(value.codePointAt(0)) || space(value.codePointBefore(value.length()))) throw new IllegalArgumentException(name + " is empty or padded");
         for (int i = 0; i < value.length();) {
             int c = value.codePointAt(i);
             if (Character.isISOControl(c)) throw new IllegalArgumentException(name + " contains a control character");
@@ -38,4 +38,5 @@ public final class Protocol {
         if (!value.matches("[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")) throw new IllegalArgumentException(name + " is invalid");
         return value;
     }
+    private static boolean space(int codePoint) { return Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint); }
 }

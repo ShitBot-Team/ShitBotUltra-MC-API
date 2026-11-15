@@ -6,7 +6,7 @@ public final class ChatMessage {
     private final String originId;
     public ChatMessage(Player player, String text, String originId) {
         Protocol.text(text, "chat", 16000);
-        Protocol.text(originId, "origin ID", 256);
+        Protocol.text(originId, "origin ID", 1024);
         this.player = java.util.Objects.requireNonNull(player, "player");
         this.text = java.util.Objects.requireNonNull(text, "text");
         this.originId = java.util.Objects.requireNonNull(originId, "originId");

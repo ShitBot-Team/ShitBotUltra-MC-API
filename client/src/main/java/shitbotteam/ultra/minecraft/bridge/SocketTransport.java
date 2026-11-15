@@ -54,7 +54,7 @@ final class SocketTransport implements AutoCloseable {
             @Override public void onClosed(WebSocket ws, int code, String reason) { lost(ws, "NODE_OFFLINE", code == 1008); }
             @Override public void onFailure(WebSocket ws, Throwable error, Response response) {
                 int status = response == null ? 0 : response.code();
-                if (response != null) response.close();
+                if (response != null) { try { response.close(); } catch (IllegalStateException ignored) { } }
                 boolean permanent = status == 400 || status == 401 || status == 403 || status == 404 || (status >= 300 && status < 400);
                 lost(ws, permanent ? "AUTH_OR_ENDPOINT_REJECTED" : "NODE_OFFLINE", permanent);
             }
